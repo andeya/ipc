@@ -11,7 +11,7 @@ func TestMsq(t *testing.T) {
 	key, err := ipc.Ftok("ipc.go", 1)
 	assert.Nil(t, err)
 
-	msqid, err := ipc.Msgget(key, ipc.IPC_CREAT|ipc.ACCESS_RDWR)
+	msqid, err := ipc.Msgget(key, ipc.IPC_CREAT|ipc.IPC_RW)
 	if err != nil {
 		t.Fatal(err)
 	}

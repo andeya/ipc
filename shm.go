@@ -10,10 +10,6 @@ import (
 //  https://blog.csdn.net/guoping16/article/details/6584058
 
 const (
-	/* Permission flag for shmget.  */
-	SHM_R = 0400 // read
-	SHM_W = 0200 // write
-
 	/* Flags for `shmat'.  */
 	SHM_RDONLY = 010000  // attach read-only else read-write
 	SHM_RND    = 020000  // round attach address to SHMLBA

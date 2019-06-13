@@ -11,7 +11,7 @@ func TestShm(t *testing.T) {
 	key, err := ipc.Ftok("ipc.go", 2)
 	assert.Nil(t, err)
 
-	shmid, err := ipc.Shmget(key, 32, ipc.IPC_CREAT|ipc.ACCESS_RDWR)
+	shmid, err := ipc.Shmget(key, 32, ipc.IPC_CREAT|ipc.IPC_RW)
 	if err != nil {
 		t.Fatal(err)
 	}
