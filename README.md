@@ -1,2 +1,3 @@
-# ipcshm
-IPC through shared memory.
+# ipc
+
+IPC Inter-Process Communication.
