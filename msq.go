@@ -24,6 +24,16 @@ const (
 	MSG_STAT_ANY = 13
 )
 
+// FtokAndMsgget returns a probably-unique key, and get the message queue identifier or
+// create a message queue object and return the message queue identifier.
+func FtokAndMsgget(path string, id uint64, msgflg int) (key uint64, msqid int, err error) {
+	key, err = Ftok(path, id)
+	if err == nil {
+		msqid, err = Msgget(key, msgflg)
+	}
+	return
+}
+
 // Msgget get the message queue identifier or
 // create a message queue object and return the message queue identifier.
 func Msgget(key uint64, msgflg int) (msqid int, err error) {
