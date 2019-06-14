@@ -16,7 +16,7 @@ func main() {
 	}
 	log.Printf("key:%d", key)
 
-	shmid, err := ipc.Shmget(key, 32, ipc.IPC_CREAT|ipc.IPC_RW)
+	shmid, err := ipc.Shmget(key, 0, ipc.IPC_R)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -27,7 +27,10 @@ func main() {
 	}
 
 	// write
-	ipc.Shmwrite(shmaddr, []byte(expected))
+	err = ipc.Shmwrite(shmaddr, []byte(expected))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// detach
 	err = ipc.Shmdt(shmaddr)

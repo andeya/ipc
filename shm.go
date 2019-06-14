@@ -2,8 +2,10 @@ package ipc
 
 import (
 	"encoding/binary"
+	"fmt"
 	"reflect"
 	"runtime"
+	"sync"
 	"syscall"
 	"unsafe"
 )
@@ -35,6 +37,27 @@ const (
 	SHM_NORESERVE = 010000 // don't check for reservations
 )
 
+var shmInfo = struct {
+	shmidSizes    map[int]uint64            // <shmid, size>
+	shmaddrSizes  map[unsafe.Pointer]uint64 // <shmaddr, size>
+	shmaddrShmids map[unsafe.Pointer]int    // <shmaddr, shmid>
+	sync.RWMutex
+}{
+	shmidSizes:    make(map[int]uint64, 64),
+	shmaddrSizes:  make(map[unsafe.Pointer]uint64, 64),
+	shmaddrShmids: make(map[unsafe.Pointer]int, 64),
+}
+
+// FtokAndShmget returns a probably-unique key, and get a shared memory identifier,
+// or create a shared memory object and return a shared memory identifier.
+func FtokAndShmget(path string, id, size uint64, shmflg int) (key uint64, shmid int, err error) {
+	key, err = Ftok(path, id)
+	if err == nil {
+		shmid, err = Shmget(key, size, shmflg)
+	}
+	return
+}
+
 // Shmget get a shared memory identifier,
 // or create a shared memory object and return a shared memory identifier.
 func Shmget(key, size uint64, shmflg int) (shmid int, err error) {
@@ -42,7 +65,11 @@ func Shmget(key, size uint64, shmflg int) (shmid int, err error) {
 	if errno != 0 {
 		return 0, errno
 	}
-	return int(_shmid), nil
+	shmid = int(_shmid)
+	shmInfo.Lock()
+	shmInfo.shmidSizes[shmid] = size
+	shmInfo.Unlock()
+	return shmid, nil
 }
 
 // Shmat connect the shared memory identifier to the shared memory of shmid.
@@ -53,7 +80,16 @@ func Shmat(shmid int, shmflg int) (shmaddr unsafe.Pointer, err error) {
 	if errno != 0 {
 		return nil, errno
 	}
-	return unsafe.Pointer(_shmaddr), nil
+	shmaddr = unsafe.Pointer(_shmaddr)
+
+	shmInfo.Lock()
+	if size, ok := shmInfo.shmidSizes[shmid]; ok {
+		shmInfo.shmaddrSizes[shmaddr] = size
+		shmInfo.shmaddrShmids[shmaddr] = shmid
+	}
+	shmInfo.Unlock()
+
+	return shmaddr, nil
 }
 
 // Shmdt contrary to the shmat function, it is used to disconnect the address with the
@@ -63,6 +99,10 @@ func Shmdt(shmaddr unsafe.Pointer) error {
 	if errno != 0 {
 		return errno
 	}
+	shmInfo.Lock()
+	delete(shmInfo.shmaddrSizes, shmaddr)
+	delete(shmInfo.shmaddrShmids, shmaddr)
+	shmInfo.Unlock()
 	return nil
 }
 
@@ -75,18 +115,34 @@ func Shmctl(shmid, cmd int) error {
 	if errno != 0 {
 		return errno
 	}
+	shmInfo.Lock()
+	delete(shmInfo.shmidSizes, shmid)
+	for addr, id := range shmInfo.shmaddrShmids {
+		if id == shmid {
+			delete(shmInfo.shmaddrShmids, addr)
+			delete(shmInfo.shmaddrSizes, addr)
+		}
+	}
+	shmInfo.Unlock()
 	return nil
 }
 
 // Shmwrite write data to the shared memory.
-func Shmwrite(shmaddr unsafe.Pointer, data []byte) {
+func Shmwrite(shmaddr unsafe.Pointer, data []byte) error {
 	size := 4 + len(data)
+	shmInfo.RLock()
+	maxSize := shmInfo.shmaddrSizes[shmaddr]
+	shmInfo.RUnlock()
+	if uint64(size) > maxSize {
+		return fmt.Errorf("data is too large, (4 + %d) > %d", len(data), maxSize)
+	}
 	buf := make([]byte, size)
 	binary.BigEndian.PutUint32(buf, uint32(size))
 	copy(buf[4:], data)
 	ptr := unsafe.Pointer(*(*uintptr)(unsafe.Pointer(&buf)))
 	t := reflect.ArrayOf(size, byteType)
 	reflect.NewAt(t, shmaddr).Elem().Set(reflect.NewAt(t, ptr).Elem())
+	return nil
 }
 
 // Shmread read data from the shared memory.

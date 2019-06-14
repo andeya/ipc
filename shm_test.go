@@ -10,7 +10,7 @@ import (
 var expectedShm = []byte("henrylee2cn")
 
 func TestShmwrite(t *testing.T) {
-	key, err := ipc.Ftok("ipc.go", 2)
+	key, err := ipc.Ftok("ipc.go", 5)
 	assert.Nil(t, err)
 
 	shmid, err := ipc.Shmget(key, 32, ipc.IPC_CREAT|ipc.IPC_RW)
@@ -25,7 +25,10 @@ func TestShmwrite(t *testing.T) {
 	}
 
 	// write
-	ipc.Shmwrite(shmaddr, expectedShm)
+	err = ipc.Shmwrite(shmaddr, expectedShm)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// detach
 	err = ipc.Shmdt(shmaddr)
@@ -35,10 +38,10 @@ func TestShmwrite(t *testing.T) {
 }
 
 func TestShmread(t *testing.T) {
-	key, err := ipc.Ftok("ipc.go", 2)
+	key, err := ipc.Ftok("ipc.go", 5)
 	assert.Nil(t, err)
 
-	shmid, err := ipc.Shmget(key, 32, ipc.IPC_CREAT|ipc.IPC_RW)
+	shmid, err := ipc.Shmget(key, 0, ipc.IPC_R)
 	if err != nil {
 		t.Fatal(err)
 	}
