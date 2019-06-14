@@ -13,7 +13,7 @@ var expected = &ipc.Msgp{
 }
 
 func TestMsq_snd(t *testing.T) {
-	key, err := ipc.Ftok("ipc.go", 1)
+	key, err := ipc.Ftok("ipc.go", 2)
 	assert.Nil(t, err)
 	t.Log(key)
 
@@ -29,11 +29,11 @@ func TestMsq_snd(t *testing.T) {
 }
 
 func TestMsq_recv(t *testing.T) {
-	key, err := ipc.Ftok("ipc.go", 1)
+	key, err := ipc.Ftok("ipc.go", 2)
 	assert.Nil(t, err)
 	t.Log(key)
 
-	msqid, err := ipc.Msgget(key, ipc.IPC_CREAT|ipc.IPC_RW)
+	msqid, err := ipc.Msgget(key, ipc.IPC_R)
 	if err != nil {
 		t.Fatal(err)
 	}
