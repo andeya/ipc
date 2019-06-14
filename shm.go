@@ -1,6 +1,9 @@
 package ipc
 
 import (
+	"encoding/binary"
+	"reflect"
+	"runtime"
 	"syscall"
 	"unsafe"
 )
@@ -73,4 +76,36 @@ func Shmctl(shmid, cmd int) error {
 		return errno
 	}
 	return nil
+}
+
+// Shmwrite write data to the shared memory.
+func Shmwrite(shmaddr unsafe.Pointer, data []byte) {
+	size := 4 + len(data)
+	buf := make([]byte, size)
+	binary.BigEndian.PutUint32(buf, uint32(size))
+	copy(buf[4:], data)
+	ptr := unsafe.Pointer(*(*uintptr)(unsafe.Pointer(&buf)))
+	t := reflect.ArrayOf(size, byteType)
+	reflect.NewAt(t, shmaddr).Elem().Set(reflect.NewAt(t, ptr).Elem())
+}
+
+// Shmread read data from the shared memory.
+func Shmread(shmaddr unsafe.Pointer) []byte {
+	bytesPtr := (*[4]byte)(shmaddr)
+	if bytesPtr == nil {
+		return nil
+	}
+	sizeBytes := *bytesPtr
+	size := int(binary.BigEndian.Uint32(sizeBytes[:])) - 4
+	if size <= 0 {
+		return []byte{}
+	}
+	buf := make([]byte, size)
+	copy(buf, *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: uintptr(shmaddr) + 4,
+		Len:  size,
+		Cap:  size,
+	})))
+	runtime.KeepAlive(shmaddr)
+	return buf
 }

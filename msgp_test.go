@@ -1,20 +1,27 @@
 package ipc
 
 import (
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestMsgp(t *testing.T) {
-	var expected = Msgp{
-		Mtype: 9,
-		Mtext: []byte("henrylee2cn"),
+func BenchmarkMsgp(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		var expected = Msgp{
+			Mtype: 9,
+			Mtext: []byte("henrylee2cn"),
+		}
+		ptr, textSize := expected.marshal()
+		if len(expected.Mtext) != textSize {
+			b.Fatalf("expected:%v, actual:%v", len(expected.Mtext), textSize)
+		}
+		var actual Msgp
+		err := actual.unmarshal(textSize, ptr)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if !reflect.DeepEqual(expected, actual) {
+			b.Fatalf("expected:%v, actual:%v", expected, actual)
+		}
 	}
-	ptr, textSize := expected.marshal()
-	assert.Equal(t, len(expected.Mtext), textSize)
-	var actual Msgp
-	err := actual.unmarshal(textSize, ptr)
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual)
 }

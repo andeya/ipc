@@ -1,8 +1,6 @@
 package ipc
 
 import (
-	"bytes"
-	"encoding/binary"
 	"reflect"
 	"unsafe"
 )
@@ -14,59 +12,40 @@ type Msgp struct {
 }
 
 var (
-	mtypeSize = int(unsafe.Sizeof(uint(0)))
+	mtypeSize = unsafe.Sizeof(uint(0))
 	byteType  = reflect.TypeOf(byte(0))
 )
 
+type msgpBuf struct {
+	Mtype uint
+	Mtext [0]byte
+}
+
 func (m *Msgp) marshal() (ptr unsafe.Pointer, textSize int) {
-	var w bytes.Buffer
-	switch mtypeSize {
-	case 4:
-		binary.Write(&w, binary.BigEndian, uint32(m.Mtype))
-	case 8:
-		binary.Write(&w, binary.BigEndian, uint64(m.Mtype))
-	}
-	binary.Write(&w, binary.BigEndian, m.Mtext)
-	data := w.Bytes()
-	count := len(data)
+	count := len(m.Mtext)
+	buf := make([]byte, count+int(mtypeSize))
+	ptr = unsafe.Pointer(*(*uintptr)(unsafe.Pointer(&buf)))
+	mbuf := (*msgpBuf)(ptr)
+	mbuf.Mtype = m.Mtype
+
 	t := reflect.ArrayOf(count, byteType)
-	v := reflect.New(t).Elem()
-	for i := 0; i < count; i++ {
-		v.Index(i).Set(reflect.ValueOf(data[i]))
-	}
-	return unsafe.Pointer(v.Addr().Pointer()), count - mtypeSize
+	mtext := reflect.NewAt(t, unsafe.Pointer(uintptr(ptr)+mtypeSize)).Elem()
+
+	mtextPtr := uintptr(unsafe.Pointer(m)) + mtypeSize
+	mtextData := reflect.NewAt(t, unsafe.Pointer(*(*uintptr)(unsafe.Pointer(mtextPtr)))).Elem()
+
+	mtext.Set(mtextData)
+
+	return ptr, count
 }
 
 func (m *Msgp) unmarshal(textSize int, ptr unsafe.Pointer) error {
-	m.Mtext = make([]byte, 0, textSize)
-	size := textSize + mtypeSize
-	t := reflect.ArrayOf(size, byteType)
-	v := reflect.NewAt(t, ptr).Elem()
-	v.Interface() // implementation data
-	mtypeBytes := make([]byte, mtypeSize)
-	for i := 0; i < size; i++ {
-		e := byte(v.Index(i).Uint())
-		if i < mtypeSize {
-			mtypeBytes[i] = e
-		} else {
-			m.Mtext = append(m.Mtext, e)
-		}
-	}
-	switch mtypeSize {
-	case 4:
-		var u uint32
-		err := binary.Read(bytes.NewReader(mtypeBytes), binary.BigEndian, &u)
-		if err != nil {
-			return err
-		}
-		m.Mtype = uint(u)
-	case 8:
-		var u uint64
-		err := binary.Read(bytes.NewReader(mtypeBytes), binary.BigEndian, &u)
-		if err != nil {
-			return err
-		}
-		m.Mtype = uint(u)
-	}
+	m.Mtext = make([]byte, textSize)
+	copy(m.Mtext, *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: uintptr(ptr) + mtypeSize,
+		Len:  textSize,
+		Cap:  textSize,
+	})))
+	m.Mtype = (*(*msgpBuf)(ptr)).Mtype
 	return nil
 }

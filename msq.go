@@ -24,8 +24,6 @@ const (
 	MSG_STAT_ANY = 13
 )
 
-var x unsafe.Pointer
-
 // Msgget get the message queue identifier or
 // create a message queue object and return the message queue identifier.
 func Msgget(key uint64, msgflg int) (msqid int, err error) {
@@ -33,7 +31,6 @@ func Msgget(key uint64, msgflg int) (msqid int, err error) {
 	if errno != 0 {
 		return 0, errno
 	}
-	x = unsafe.Pointer(_msqid)
 	return int(_msqid), nil
 }
 
@@ -71,13 +68,13 @@ var maxMsgsz uintptr = 2
 // Msgrcv read the message from the message queue with the identifier msqid and store it in msgp.
 // After reading, delete the message from the message queue.
 func Msgrcv(msqid int, msgtyp int64, msgflg int) (*Msgp, error) {
-	header := unsafe.Pointer(new(byte))
-	msgptr := uintptr(header)
 	msgsz := atomic.LoadUintptr(&maxMsgsz)
 	for {
+		buf := make([]byte, msgsz+mtypeSize)
+		msgptr := unsafe.Pointer(&buf)
 		lengthRead, _, errno := syscall.Syscall6(syscall.SYS_MSGRCV,
 			uintptr(msqid),
-			msgptr,
+			uintptr(msgptr),
 			msgsz,
 			uintptr(msgtyp),
 			uintptr(msgflg),
@@ -90,7 +87,7 @@ func Msgrcv(msqid int, msgtyp int64, msgflg int) (*Msgp, error) {
 				atomic.StoreUintptr(&maxMsgsz, lengthRead)
 			}
 			msgp := new(Msgp)
-			msgp.unmarshal(int(lengthRead), header)
+			msgp.unmarshal(int(lengthRead), msgptr)
 			return msgp, nil
 		case syscall.E2BIG:
 			msgsz *= 2
