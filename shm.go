@@ -109,10 +109,11 @@ func Shmdt(shmaddr unsafe.Pointer) error {
 // Shmctl control shared memory
 // NOTE:
 //  cmd: IPC_STAT, IPC_SET, IPC_RMID
+//  Currently only IPC_RMID is implemented!
 func Shmctl(shmid, cmd int) error {
 	var buf uintptr = 0
 	_, _, errno := syscall.Syscall(syscall.SYS_SHMCTL, uintptr(shmid), uintptr(cmd), buf)
-	if errno != 0 {
+	if errno != 0 || cmd != IPC_RMID {
 		return errno
 	}
 	shmInfo.Lock()
