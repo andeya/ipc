@@ -24,19 +24,19 @@ func NewFlock(path string) (*Flock, error) {
 	}, nil
 }
 
-// Lock set a writing lock
-func (l *Flock) Lock(nonBlock ...bool) error {
+// ExclusiveLock set an exclusive lock
+func (l *Flock) ExclusiveLock(nonBlock ...bool) error {
 	return l.lock(true, nonBlock...)
 }
 
-// RLock set a reading lock
-func (l *Flock) RLock(nonBlock ...bool) error {
+// ShareLock set a sharing lock
+func (l *Flock) ShareLock(nonBlock ...bool) error {
 	return l.lock(false, nonBlock...)
 }
 
-func (l *Flock) lock(writable bool, nonBlock ...bool) error {
+func (l *Flock) lock(exclusive bool, nonBlock ...bool) error {
 	how := syscall.LOCK_SH
-	if writable {
+	if exclusive {
 		how = syscall.LOCK_EX
 	}
 	if len(nonBlock) > 0 && nonBlock[0] {
@@ -49,8 +49,8 @@ func (l *Flock) lock(writable bool, nonBlock ...bool) error {
 	return nil
 }
 
-// Unlock free a lock
-func (l *Flock) Unlock() error {
+// UnlockAll release all locks in the current process
+func (l *Flock) UnlockAll() error {
 	return syscall.Flock(int(l.f.Fd()), syscall.LOCK_UN)
 }
 
