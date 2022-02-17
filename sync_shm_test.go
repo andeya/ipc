@@ -1,6 +1,7 @@
 package ipc
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,9 +22,16 @@ func TestSyncShm1(t *testing.T) {
 func TestSyncShm2(t *testing.T) {
 	syncShm, err := AttachSyncShm("example", 0)
 	assert.NoError(t, err)
-	data2 := syncShm.Read()
-	assert.Equal(t, data, data2)
-	t.Log(string(data))
+	wg := sync.WaitGroup{}
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			data2 := syncShm.Read()
+			assert.Equal(t, data, data2)
+		}()
+	}
+	wg.Wait()
 }
 
 func TestSyncShm3(t *testing.T) {

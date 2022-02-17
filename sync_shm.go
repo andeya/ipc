@@ -1,16 +1,14 @@
 package ipc
 
 import (
-	"sync"
 	"unsafe"
 )
 
 type SyncShm struct {
 	key     uint64
 	shmid   int
-	flock   *Flock
 	shmaddr unsafe.Pointer
-	lock    sync.RWMutex
+	lock    *IPLock
 }
 
 func AttachSyncShm(path string, sizeIfCreate uint64) (*SyncShm, error) {
@@ -18,7 +16,7 @@ func AttachSyncShm(path string, sizeIfCreate uint64) (*SyncShm, error) {
 	if err != nil {
 		return nil, err
 	}
-	flock, err := NewFlock(path)
+	lock, err := NewIPLock(path)
 	if err != nil {
 		return nil, err
 	}
@@ -29,16 +27,14 @@ func AttachSyncShm(path string, sizeIfCreate uint64) (*SyncShm, error) {
 	return &SyncShm{
 		key:     key,
 		shmid:   shmid,
-		flock:   flock,
+		lock:    lock,
 		shmaddr: shmaddr,
 	}, nil
 }
 
 func (s *SyncShm) Read() []byte {
 	s.lock.RLock()
-	_ = s.flock.RLock()
 	defer func() {
-		_ = s.flock.Unlock()
 		s.lock.RUnlock()
 	}()
 	return Shmread(s.shmaddr)
@@ -46,9 +42,7 @@ func (s *SyncShm) Read() []byte {
 
 func (s *SyncShm) Write(data []byte) error {
 	s.lock.Lock()
-	_ = s.flock.Lock()
 	defer func() {
-		_ = s.flock.Unlock()
 		s.lock.Unlock()
 	}()
 	return Shmwrite(s.shmaddr, data)
@@ -56,24 +50,20 @@ func (s *SyncShm) Write(data []byte) error {
 
 func (s *SyncShm) Detach() error {
 	s.lock.Lock()
-	_ = s.flock.Lock()
 	defer func() {
-		_ = s.flock.Unlock()
 		s.lock.Unlock()
+		s.lock.Close()
 	}()
 	err := Shmdt(s.shmaddr)
-	_ = s.flock.Close()
 	return err
 }
 
 func (s *SyncShm) Remove() error {
 	s.lock.Lock()
-	_ = s.flock.Lock()
 	defer func() {
-		_ = s.flock.Unlock()
 		s.lock.Unlock()
+		s.lock.Close()
 	}()
 	err := Shmctl(s.shmid, IPC_RMID)
-	_ = s.flock.Close()
 	return err
 }
