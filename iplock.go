@@ -18,7 +18,7 @@ const (
 	FLockMode   IPLockMode = 1
 )
 
-func NewIPLock(path string, mode IPLockMode, ftokId ...uint64) (IPLock, error) {
+func NewIPLock(path string, mode IPLockMode, ftokIdForSemLock ...uint64) (IPLock, error) {
 	if mode > 1 {
 		mode = 0
 	}
@@ -31,8 +31,8 @@ func NewIPLock(path string, mode IPLockMode, ftokId ...uint64) (IPLock, error) {
 		return flock.RWMutex(), nil
 	case SemLockMode:
 		var id uint64
-		if len(ftokId) > 0 {
-			id = ftokId[0]
+		if len(ftokIdForSemLock) > 0 {
+			id = ftokIdForSemLock[0]
 		}
 		key, err := Ftok(path, id)
 		if err != nil {
