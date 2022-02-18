@@ -1,7 +1,6 @@
 package ipc
 
 import (
-	"reflect"
 	"syscall"
 	"unsafe"
 )
@@ -55,47 +54,11 @@ func Semop(semid int, sops []SemOp) (err error) {
 }
 
 // Semctl get and set the properties of the message queue.
-func Semctl(semid int, cmd int) (uintptr, error) {
-	var semnum int = 0
-	var arg uintptr = 0
-	r1, _, errno := syscall.Syscall6(syscall.SYS_SEMCTL, uintptr(semid), *(*uintptr)(unsafe.Pointer(&semnum)), uintptr(cmd), arg, 0, 0)
+func Semctl(semid int, cmd int) error {
+	var semnum int
+	_, _, errno := syscall.Syscall(syscall.SYS_SEMCTL, uintptr(semid), uintptr(unsafe.Pointer(&semnum)), uintptr(cmd))
 	if errno != 0 {
-		return 0, errno
+		return errno
 	}
-	return r1, nil
-}
-
-type SemidDs struct {
-	SemPerm  uintptr
-	SemInfos []SemInfo
-	SemOtime int64
-	SemCtime int64
-}
-
-type SemInfo struct {
-	SemVal  uint16 // 信号量的值
-	SemPID  int    // 最近一次执行操作的进程的进程号
-	SemNcnt uint16 // 等待信号值增长，即等待可利用资源出现的进程数
-	SemZcnt uint16 // 等待信号值减少，即等待全部资源可被独占的进程数
-}
-
-// SemAllInfo get all the info.
-func SemAllInfo(semid int) (*SemidDs, error) {
-	type _SemidDs struct {
-		SemPerm  uintptr
-		SemBase  uintptr
-		SemNsems uint16 // []SemInfo ptr
-		SemOtime int64
-		SemCtime int64
-	}
-	r, err := Semctl(semid, GETALL)
-	if err != nil {
-		return nil, err
-	}
-	buf := (*_SemidDs)(unsafe.Pointer(r))
-	return (*SemidDs)(unsafe.Pointer(&reflect.SliceHeader{
-		Data: buf.SemBase,
-		Len:  int(buf.SemNsems),
-		Cap:  int(buf.SemNsems),
-	})), nil
+	return nil
 }

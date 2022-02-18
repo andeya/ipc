@@ -68,20 +68,21 @@ func TestSemLock2(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		semLock.Lock()
-		t.Log("4: Lock")
+		t.Log("2: Lock")
 		semLock.Unlock()
-		t.Log("4: Unlock")
+		t.Log("2: Unlock")
 	}()
 	time.Sleep(time.Second * 1)
-	t.Log("3: Lock")
+	t.Log("1: Lock")
 	semLock.Unlock()
-	t.Log("3: Unlock")
+	t.Log("1: Unlock")
 	wg.Wait()
 }
 
 func TestSemLock3(t *testing.T) {
 	semLock, err := NewSemLock(1)
 	assert.NoError(t, err)
+	defer semLock.Close()
 	t.Log(semLock, err)
 	semLock.Lock()
 	go func() {
@@ -92,12 +93,12 @@ func TestSemLock3(t *testing.T) {
 	semLock.Lock()
 	t.Log("2")
 	semLock.Unlock()
-	semLock.Close()
 }
 
 func TestSemLock4(t *testing.T) {
 	semLock, err := NewSemLock(1)
 	assert.NoError(t, err)
+	defer semLock.Close()
 	t.Log(semLock, err)
 	semLock.Lock()
 	go func() {
@@ -108,12 +109,12 @@ func TestSemLock4(t *testing.T) {
 	semLock.RLock()
 	t.Log("2")
 	semLock.RUnlock()
-	semLock.Close()
 }
 
 func TestSemLock5(t *testing.T) {
 	semLock, err := NewSemLock(1)
 	assert.NoError(t, err)
+	defer semLock.Close()
 	t.Log(semLock, err)
 	semLock.Lock()
 	t.Log("1")
@@ -123,20 +124,22 @@ func TestSemLock5(t *testing.T) {
 	semLock.Unlock()
 }
 
-func TestSemLock_BUG(t *testing.T) {
+func TestSemLock6(t *testing.T) {
 	semLock, err := NewSemLock(1)
 	assert.NoError(t, err)
+	defer semLock.Close()
 	t.Log(semLock, err)
 	semLock.RLock()
 	go func() {
 		time.Sleep(time.Second * 2)
-		t.Log("1")
+		t.Log("2")
 		semLock.RUnlock()
+		t.Log("3")
 	}()
+	t.Log("1")
 	semLock.Lock()
-	t.Log("2")
+	t.Log("4")
 	semLock.Unlock()
-	semLock.Close()
 }
 
 func TestSemLock_Close(t *testing.T) {

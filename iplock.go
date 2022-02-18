@@ -1,6 +1,8 @@
 package ipc
 
-import "sync"
+import (
+	"sync"
+)
 
 type IPLock interface {
 	sync.Locker
@@ -12,8 +14,8 @@ type IPLock interface {
 type IPLockMode int8
 
 const (
-	FLockMode   IPLockMode = 0
-	SemLockMode IPLockMode = 1
+	SemLockMode IPLockMode = 0
+	FLockMode   IPLockMode = 1
 )
 
 func NewIPLock(path string, mode IPLockMode, ftokId ...uint64) (IPLock, error) {

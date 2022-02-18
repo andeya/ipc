@@ -9,9 +9,11 @@ import (
 
 var data = []byte("TestSyncShm1: Write1")
 
+const sizeIfCreate = 1 << 10
+
 func TestSyncShm1(t *testing.T) {
 	const a = 1 << 10
-	syncShm, err := AttachSyncShm("example", 1<<10)
+	syncShm, err := AttachSyncShm("example", sizeIfCreate)
 	assert.NoError(t, err)
 	err = syncShm.Write(data)
 	assert.NoError(t, err)
@@ -20,7 +22,7 @@ func TestSyncShm1(t *testing.T) {
 }
 
 func TestSyncShm2(t *testing.T) {
-	syncShm, err := AttachSyncShm("example", 0)
+	syncShm, err := AttachSyncShm("example", sizeIfCreate)
 	assert.NoError(t, err)
 	wg := sync.WaitGroup{}
 	for i := 0; i < 100; i++ {
@@ -35,7 +37,7 @@ func TestSyncShm2(t *testing.T) {
 }
 
 func TestSyncShm3(t *testing.T) {
-	syncShm, err := AttachSyncShm("example", 0)
+	syncShm, err := AttachSyncShm("example", sizeIfCreate)
 	assert.NoError(t, err)
 	err = syncShm.Detach()
 	assert.NoError(t, err)
