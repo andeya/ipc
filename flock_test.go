@@ -34,3 +34,15 @@ func TestFlock2(t *testing.T) {
 	err = flock.ExclusiveLock()
 	assert.NoError(t, err)
 }
+
+func TestFlock_RWMutex(t *testing.T) {
+	flock, err := NewFlock("example")
+	assert.NoError(t, err)
+	ipLock := flock.RWMutex()
+	ipLock.RLock()
+	ipLock.RLock()
+	ipLock.RUnlock()
+	ipLock.RUnlock()
+	ipLock.Lock()
+	ipLock.Unlock()
+}

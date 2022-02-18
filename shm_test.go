@@ -1,65 +1,64 @@
-package ipc_test
+package ipc
 
 import (
 	"testing"
 
-	"github.com/henrylee2cn/ipc"
 	"github.com/stretchr/testify/assert"
 )
 
 var expectedShm = []byte("henrylee2cn")
 
 func TestShmwrite(t *testing.T) {
-	key, err := ipc.Ftok("ipc.go", 5)
+	key, err := Ftok("ipc.go", 5)
 	assert.Nil(t, err)
 
-	shmid, err := ipc.Shmget(key, 32, ipc.IPC_CREAT|ipc.IPC_RW)
+	shmid, err := Shmget(key, 32, IPC_CREAT|IPC_RW)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// attach
-	shmaddr, err := ipc.Shmat(shmid, ipc.SHM_REMAP)
+	shmaddr, err := Shmat(shmid, SHM_REMAP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// write
-	err = ipc.Shmwrite(shmaddr, expectedShm)
+	err = Shmwrite(shmaddr, expectedShm)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// detach
-	err = ipc.Shmdt(shmaddr)
+	err = Shmdt(shmaddr)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestShmread(t *testing.T) {
-	key, err := ipc.Ftok("ipc.go", 5)
+	key, err := Ftok("ipc.go", 5)
 	assert.Nil(t, err)
 
-	shmid, err := ipc.Shmget(key, 0, ipc.IPC_R)
+	shmid, err := Shmget(key, 0, IPC_R)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	defer func() {
-		err := ipc.Shmctl(shmid, ipc.IPC_RMID)
+		err := Shmctl(shmid, IPC_RMID)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
 
 	// attach
-	shmaddr, err := ipc.Shmat(shmid, ipc.SHM_REMAP)
+	shmaddr, err := Shmat(shmid, SHM_REMAP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// read
-	actual := ipc.Shmread(shmaddr)
+	actual := Shmread(shmaddr)
 	assert.Equal(t, expectedShm, actual)
 }

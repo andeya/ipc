@@ -8,15 +8,19 @@ type SyncShm struct {
 	key     uint64
 	shmid   int
 	shmaddr unsafe.Pointer
-	lock    *IPLock
+	lock    IPLock
 }
 
-func AttachSyncShm(path string, sizeIfCreate uint64) (*SyncShm, error) {
+func AttachSyncShm(path string, sizeIfCreate uint64, ipLockMode ...IPLockMode) (*SyncShm, error) {
 	key, shmid, err := FtokAndShmget(path, 0, sizeIfCreate, IPC_CREAT|IPC_RW)
 	if err != nil {
 		return nil, err
 	}
-	lock, err := NewIPLock(path)
+	var mode IPLockMode
+	if len(ipLockMode) > 0 {
+		mode = ipLockMode[0]
+	}
+	lock, err := NewIPLock(path, mode, 0)
 	if err != nil {
 		return nil, err
 	}

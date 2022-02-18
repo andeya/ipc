@@ -3,6 +3,8 @@ package ipc
 import (
 	"fmt"
 	"os"
+	"sync"
+	"sync/atomic"
 	"syscall"
 )
 
@@ -57,4 +59,48 @@ func (l *Flock) UnlockAll() error {
 // Close closes the file and free all locks
 func (l *Flock) Close() error {
 	return l.f.Close()
+}
+
+func (l *Flock) RWMutex() IPLock {
+	return &FRWMutex{file: l, local: sync.RWMutex{}}
+}
+
+// FRWMutex inter-process lock by flock
+type FRWMutex struct {
+	file       *Flock
+	local      sync.RWMutex
+	rlockCount int32
+}
+
+func (l *FRWMutex) RLock() {
+	l.local.RLock()
+	atomic.AddInt32(&l.rlockCount, 1)
+	_ = l.file.ShareLock()
+}
+
+func (l *FRWMutex) RUnlock() {
+	rlockCount := atomic.AddInt32(&l.rlockCount, -1)
+	if rlockCount == 0 {
+		_ = l.file.UnlockAll()
+	}
+	l.local.RUnlock()
+}
+
+func (l *FRWMutex) Lock() {
+	l.local.Lock()
+	_ = l.file.ExclusiveLock()
+}
+
+func (l *FRWMutex) Unlock() {
+	_ = l.file.UnlockAll()
+	l.local.Unlock()
+}
+
+func (l *FRWMutex) Close() {
+	l.local.Lock()
+	defer func() {
+		l.local.Unlock()
+		recover()
+	}()
+	_ = l.file.Close()
 }
