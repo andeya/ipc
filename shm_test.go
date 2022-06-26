@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var expectedShm = []byte("henrylee2cn")
+var expectedShm = []byte("andeya")
 
 func TestShmwrite(t *testing.T) {
 	key, err := Ftok("ipc.go", 5)

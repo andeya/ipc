@@ -4,12 +4,12 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/henrylee2cn/ipc"
+	"github.com/andeya/ipc"
 )
 
 var expected = &ipc.Msgp{
 	Mtype: 9,
-	Mtext: []byte("henrylee2cn"),
+	Mtext: []byte("andeya"),
 }
 
 func main() {

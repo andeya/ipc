@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 
-	"github.com/henrylee2cn/ipc"
+	"github.com/andeya/ipc"
 )
 
-var expected = "henrylee2cn"
+var expected = "andeya"
 
 func main() {
 	key, err := ipc.Ftok("../../ipc.go", 2)

@@ -1,4 +1,4 @@
-module github.com/henrylee2cn/ipc
+module github.com/andeya/ipc
 
 go 1.16
 

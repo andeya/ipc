@@ -9,7 +9,7 @@ import (
 
 var expected = &Msgp{
 	Mtype: 9,
-	Mtext: []byte("henrylee2cn"),
+	Mtext: []byte("andeya"),
 }
 
 func TestMsq_snd(t *testing.T) {
@@ -56,7 +56,7 @@ func BenchmarkMsgp(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var expected = Msgp{
 			Mtype: 9,
-			Mtext: []byte("henrylee2cn"),
+			Mtext: []byte("andeya"),
 		}
 		ptr, textSize := expected.marshal()
 		if len(expected.Mtext) != textSize {
